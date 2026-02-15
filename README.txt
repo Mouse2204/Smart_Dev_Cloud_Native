@@ -1,82 +1,109 @@
 # Smart Dev-Docs Platform - Hướng dẫn sử dụng
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Apache%20Spark-E25A1C?style=for-the-badge&logo=apachespark&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apachekafka&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Iceberg-0A66C2?style=for-the-badge&logo=apache&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white"/>
+</p>
+
+---
+
 ## 📋 Tổng quan
 
-Hệ thống **Smart Dev-Docs Platform** là một nền tảng xử lý dữ liệu streaming kết hợp với AI, được triển khai trên Kubernetes (Minikube). Hệ thống bao gồm:
+**Smart Dev-Docs Platform** là nền tảng xử lý dữ liệu streaming kết hợp với AI, triển khai trên Kubernetes (Minikube).
 
-- **Kafka** (KRaft mode) - Tiếp nhận dữ liệu streaming
-- **Spark Streaming** - Xử lý real-time và ghi vào Iceberg
-- **Iceberg** + **Hive Metastore** - Lưu trữ dữ liệu dạng bảng với ACID
-- **Ollama** - Tạo embeddings và suy luận với models AI
-- **PostgreSQL** - Metadata store cho Hive
+| Thành phần | Công nghệ | Namespace | Chức năng |
+|------------|-----------|-----------|-----------|
+| **Ingestion** | Kafka (KRaft) | `kafka-kraft` | Tiếp nhận dữ liệu streaming |
+| **Processing** | Spark Streaming | `spark` | Xử lý real-time, ghi Iceberg |
+| **Storage** | Iceberg + Hive | `hive` | Lưu trữ ACID, quản lý metadata |
+| **AI/ML** | Ollama | `ollama` | Embeddings & Inference |
+| **Metadata** | PostgreSQL | `postgres` | Hive Metastore backend |
+
+---
 
 ## 🚀 Bắt đầu nhanh
 
 ### 1. Triển khai hệ thống
 
 ```bash
-# Áp dụng tất cả cấu hình
+# Áp dụng cấu hình
 kubectl apply -f config/systems.yml
 
-# Kiểm tra các pods đã chạy
+# Kiểm tra pods
 kubectl get pods -A
 ```
 
-### 2. Kiểm tra trạng thái các services
+**Kết quả mong đợi:**
+```
+NAMESPACE     NAME                                     READY   STATUS
+hive          metastore-xxx                            1/1     Running
+kafka-kraft   kafka-0                                   1/1     Running
+ollama        ollama-xxx                                1/1     Running
+postgres      postgres-xxx                              1/1     Running
+spark         spark-streaming-xxx                       1/1     Running
+```
+
+### 2. Kiểm tra services
 
 ```bash
-# Kiểm tra tất cả pods
-kubectl get pods -A
-
-# Xem logs của Spark Streaming
+# Spark logs
 kubectl logs -f -n spark deployment/spark-streaming
 
-# Kiểm tra Kafka topics
-kubectl exec -n kafka-kraft kafka-0 -- kafka-topics --bootstrap-server localhost:9092 --list
+# Kafka topics
+kubectl exec -n kafka-kraft kafka-0 -- kafka-topics --list --bootstrap-server localhost:9092
 ```
+
+---
 
 ## 📤 Gửi dữ liệu vào Kafka
 
-### Tạo topic và gửi test data
+### Tạo topic
 
 ```bash
-# Tạo topic document-events
 kubectl exec -n kafka-kraft kafka-0 -- kafka-topics \
   --bootstrap-server localhost:9092 \
   --create \
   --topic document-events \
   --partitions 1 \
   --replication-factor 1
+```
 
-# Gửi test messages
+### Gửi test data
+
+```bash
 kubectl exec -n kafka-kraft -it kafka-0 -- kafka-console-producer \
   --bootstrap-server localhost:9092 \
   --topic document-events
 ```
 
-Paste các messages sau (mỗi dòng một message):
+**Paste các messages sau:**
 ```json
 {"doc_id": "doc1", "chunk_id": "chunk1", "content": "Apache Iceberg is a high-performance format for huge analytic tables", "timestamp": 1771146503}
 {"doc_id": "doc1", "chunk_id": "chunk2", "content": "Iceberg brings SQL reliability to data lakes", "timestamp": 1771146504}
 {"doc_id": "doc2", "chunk_id": "chunk1", "content": "Spark Streaming processes real-time data from Kafka", "timestamp": 1771146505}
 ```
 
+---
+
 ## 🔍 Kiểm tra dữ liệu trong Iceberg
 
-### Cách 1: Đọc trực tiếp file Parquet
+### Cách 1: Spark Shell
 
 ```bash
 # Vào Spark Shell
 kubectl exec -n spark -it deployment/spark-streaming -- /opt/spark/bin/spark-shell
 
-# Trong Spark Shell, đọc file Parquet
-spark.read.parquet("/opt/iceberg/warehouse/db/doc_chunks/data/*.parquet").show(false)
+# Đọc dữ liệu
+scala> spark.read.parquet("/opt/iceberg/warehouse/db/doc_chunks/data/*.parquet").show(false)
 
 # Thoát
-:quit
+scala> :quit
 ```
 
-### Cách 2: Query qua Iceberg catalog
+### Cách 2: Spark SQL
 
 ```bash
 kubectl exec -n spark -it deployment/spark-streaming -- /opt/spark/bin/spark-sql \
@@ -88,32 +115,41 @@ kubectl exec -n spark -it deployment/spark-streaming -- /opt/spark/bin/spark-sql
   -e "SELECT * FROM hive_prod.db.doc_chunks;"
 ```
 
+### Cách 3: Kiểm tra files
+
+```bash
+# Xem files trong warehouse
+kubectl exec -n spark deployment/spark-streaming -- ls -la /opt/iceberg/warehouse/db/doc_chunks/data/
+```
+
+---
+
 ## 🤖 Sử dụng Ollama AI
 
-### Port-forward Ollama service
+### 1. Port-forward
 
 ```bash
 # Terminal 1
 kubectl port-forward -n ollama svc/ollama-service 11434:11434
 ```
 
-### Kiểm tra models đã được pull
+### 2. Kiểm tra models
 
 ```bash
 curl http://localhost:11434/api/tags
 ```
 
-Kết quả mong đợi:
+**Kết quả:**
 ```json
 {
   "models": [
-    {"name": "nomic-embed-text:latest", ...},
-    {"name": "mistral:7b-instruct", ...}
+    {"name": "nomic-embed-text:latest", "size": 274302450},
+    {"name": "mistral:7b-instruct", "size": 4372824384}
   ]
 }
 ```
 
-### Tạo embeddings
+### 3. Tạo embeddings
 
 ```bash
 curl http://localhost:11434/api/embeddings -d '{
@@ -122,7 +158,7 @@ curl http://localhost:11434/api/embeddings -d '{
 }'
 ```
 
-### Chat với Mistral
+### 4. Chat với Mistral
 
 ```bash
 # Non-streaming
@@ -132,99 +168,108 @@ curl http://localhost:11434/api/generate -d '{
   "stream": false
 }'
 
-# Streaming (real-time response)
+# Streaming
 curl http://localhost:11434/api/generate -d '{
   "model": "mistral:7b-instruct",
-  "prompt": "Explain Spark Streaming in 2 sentences"
+  "prompt": "Explain Spark Streaming"
 }'
 ```
+
+---
 
 ## 📊 Spark UI
 
 ```bash
 # Port-forward Spark UI
-kubectl port-forward -n spark spark-streaming-xxxxx 4040:4040
+kubectl port-forward -n spark spark-streaming-$(kubectl get pod -n spark -l app=spark-streaming -o jsonpath='{.items[0].metadata.name}') 4040:4040
 ```
 
-Mở browser: http://localhost:4040
+Mở trình duyệt: **http://localhost:4040**
+
+---
 
 ## 🛠 Các lệnh hữu ích
 
 ### Xem logs
 
-```bash
-# Spark Streaming
-kubectl logs -f -n spark deployment/spark-streaming
-
-# Kafka
-kubectl logs -f -n kafka-kraft kafka-0
-
-# Ollama
-kubectl logs -f -n ollama deployment/ollama
-
-# Hive Metastore
-kubectl logs -f -n hive deployment/metastore
-```
+| Service | Command |
+|---------|---------|
+| Spark | `kubectl logs -f -n spark deployment/spark-streaming` |
+| Kafka | `kubectl logs -f -n kafka-kraft kafka-0` |
+| Ollama | `kubectl logs -f -n ollama deployment/ollama` |
+| Hive | `kubectl logs -f -n hive deployment/metastore` |
 
 ### Exec vào containers
 
-```bash
-# Spark
-kubectl exec -n spark -it deployment/spark-streaming -- /bin/bash
-
-# Kafka
-kubectl exec -n kafka-kraft -it kafka-0 -- /bin/bash
-
-# Ollama
-kubectl exec -n ollama -it deployment/ollama -- /bin/sh
-```
+| Container | Command |
+|-----------|---------|
+| Spark | `kubectl exec -n spark -it deployment/spark-streaming -- /bin/bash` |
+| Kafka | `kubectl exec -n kafka-kraft -it kafka-0 -- /bin/bash` |
+| Ollama | `kubectl exec -n ollama -it deployment/ollama -- /bin/sh` |
 
 ### Xóa resources
 
 ```bash
-# Xóa deployment cụ thể
+# Xóa deployment
 kubectl delete deployment spark-streaming -n spark
 
-# Xóa tất cả trong namespace
-kubectl delete all --all -n spark
+# Xóa namespace
+kubectl delete ns spark
 
 # Xóa toàn bộ hệ thống
 kubectl delete -f config/systems.yml
 ```
 
+---
+
 ## 📁 Cấu trúc dữ liệu
 
-### Iceberg Warehouse
 ```
 /opt/iceberg/warehouse/
 ├── db/
 │   └── doc_chunks/
-│       ├── data/          # File Parquet chứa dữ liệu
-│       └── metadata/       # Metadata của Iceberg
+│       ├── data/
+│       │   └── *.parquet          # Dữ liệu thực tế
+│       └── metadata/
+│           ├── *.metadata.json     # Schema & snapshots
+│           └── *.avro              # Manifest files
 ```
 
-### Kafka Topics
-- `document-events` - Topic chính nhận dữ liệu documents
+---
 
 ## 🔄 Data Flow
 
-1. **Source** → Gửi JSON messages vào Kafka topic `document-events`
-2. **Spark Streaming** đọc từ Kafka, parse JSON
+```mermaid
+graph LR
+    A[Source] -->|JSON| B(Kafka)
+    B -->|Streaming| C(Spark)
+    C -->|Write| D(Iceberg)
+    C -->|Read| D
+    D -->|Query| E[Streamlit/API]
+    C -->|Embeddings| F(Ollama)
+    F -->|Vectors| E
+```
+
+1. **Source** gửi JSON vào Kafka topic `document-events`
+2. **Spark Streaming** đọc, parse, transform
 3. **Spark** ghi vào Iceberg table `hive_prod.db.doc_chunks`
-4. **Ollama** sẵn sàng để tạo embeddings hoặc chat
-5. **Streamlit/API** (tùy chọn) truy vấn dữ liệu và sử dụng AI
+4. **Ollama** tạo embeddings / chat
+5. **Streamlit/API** query dữ liệu + AI
+
+---
 
 ## 🐛 Troubleshooting
 
 ### 1. Spark không tìm thấy spark-submit
 ```bash
-# Dùng image apache/spark:3.5.7-python3
+# Sửa image
 sed -i 's|.*image:.*|          image: apache/spark:3.5.7-python3|g' config/systems.yml
+kubectl apply -f config/systems.yml
 ```
 
 ### 2. Lỗi Ivy cache
-```bash
-# Thêm env variables
+```yaml
+# Thêm vào container spark
 env:
 - name: IVY_CACHE_DIR
   value: /tmp/.ivy2
@@ -232,40 +277,48 @@ env:
 
 ### 3. Ollama không pull được models
 ```bash
-# Pull trực tiếp từ pod
+# Pull trực tiếp
 kubectl exec -n ollama -it deployment/ollama -- ollama pull nomic-embed-text
 kubectl exec -n ollama -it deployment/ollama -- ollama pull mistral:7b-instruct
 ```
 
-### 4. Không kết nối được đến Kafka
+### 4. Không kết nối được Kafka
 ```bash
-# Kiểm tra service
-kubectl get svc -n kafka-kraft
-kubectl get endpoints -n kafka-kraft
-
-# Test kết nối
-kubectl run -n spark test-kafka --image=busybox:1.36 --rm -it --restart=Never -- sh -c "nc -zv kafka-service.kafka-kraft 9092"
+# Kiểm tra kết nối
+kubectl run -n spark test-kafka --image=busybox:1.36 --rm -it --restart=Never -- \
+  sh -c "nc -zv kafka-service.kafka-kraft 9092"
 ```
+
+---
 
 ## 📈 Monitoring
 
-### Kiểm tra resource usage
 ```bash
+# Resource usage
 kubectl top pods -A
 kubectl top nodes
+
+# Events
+kubectl get events -A --sort-by='.lastTimestamp'
+
+# Describe pod
+kubectl describe pod -n spark -l app=spark-streaming
 ```
 
-### Xem events
-```bash
-kubectl get events -A --sort-by='.lastTimestamp'
-```
+---
 
 ## 🎯 Kết luận
 
-Hệ thống đã sẵn sàng để:
-- ✅ Nhận dữ liệu streaming qua Kafka
-- ✅ Xử lý real-time với Spark
-- ✅ Lưu trữ ACID với Iceberg
-- ✅ Tạo embeddings và chat với Ollama
+✅ **Kafka** - Nhận dữ liệu streaming  
+✅ **Spark** - Xử lý real-time  
+✅ **Iceberg** - Lưu trữ ACID  
+✅ **Ollama** - Embeddings & Chat  
+✅ **Hive** - Quản lý metadata  
 
-**Chúc bạn thành công!** 🚀
+---
+
+<p align="center">
+  <b>🎉 Hệ thống đã sẵn sàng! 🎉</b>
+  <br>
+  <i>Happy Coding!</i>
+</p>
