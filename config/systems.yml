@@ -492,6 +492,9 @@ spec:
       containers:
       - name: puller
         image: ollama/ollama:0.1.44
+        env:
+        - name: OLLAMA_HOST
+          value: "http://ollama-service:11434"
         command:
           - /bin/sh
           - -c
