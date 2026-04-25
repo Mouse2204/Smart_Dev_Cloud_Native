@@ -181,7 +181,8 @@ curl http://localhost:11434/api/generate -d '{
 
 ```bash
 # Port-forward Spark UI
-kubectl port-forward -n spark spark-streaming-$(kubectl get pod -n spark -l app=spark-streaming -o jsonpath='{.items[0].metadata.name}') 4040:4040
+kubectl port-forward -n spark deployment/spark-streaming 4040:4040
+
 ```
 
 Mở trình duyệt: **http://localhost:4040**
