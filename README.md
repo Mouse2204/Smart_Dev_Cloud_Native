@@ -158,6 +158,8 @@ curl http://localhost:11434/api/embeddings -d '{
 }'
 ```
 
+Lưu ý: request đầu tiên có thể chậm 30-120 giây do model được nạp vào RAM (CPU mode), nhìn như bị "stuck" nhưng vẫn đang xử lý.
+
 ### 4. Chat với Mistral
 
 ```bash
@@ -173,6 +175,13 @@ curl http://localhost:11434/api/generate -d '{
   "model": "mistral:7b-instruct",
   "prompt": "Explain Spark Streaming"
 }'
+```
+
+Mẹo kiểm tra nhanh khi nghi bị treo:
+
+```bash
+timeout 20s curl -sS http://localhost:11434/api/tags | head
+kubectl logs -n ollama deployment/ollama --tail=80
 ```
 
 ---
@@ -283,7 +292,21 @@ kubectl exec -n ollama -it deployment/ollama -- ollama pull nomic-embed-text
 kubectl exec -n ollama -it deployment/ollama -- ollama pull mistral:7b-instruct
 ```
 
-### 4. Không kết nối được Kafka
+### 4. Ollama có vẻ bị "stuck"
+```bash
+# Kiểm tra API còn phản hồi
+timeout 20s curl -sS http://localhost:11434/api/tags | head
+
+# Xem model đã có chưa
+kubectl exec -n ollama deployment/ollama -- ollama list
+
+# Theo dõi logs để thấy request vẫn đang xử lý
+kubectl logs -f -n ollama deployment/ollama
+```
+
+Nếu logs có `POST /api/embeddings` hoặc `POST /api/generate` và status `200`, Ollama vẫn hoạt động bình thường.
+
+### 5. Không kết nối được Kafka
 ```bash
 # Kiểm tra kết nối
 kubectl run -n spark test-kafka --image=busybox:1.36 --rm -it --restart=Never -- \
