@@ -21,6 +21,11 @@ If PDFs are already in MinIO:
 ```bash
 ./k8s/build.sh pipeline --skip-upload
 ```
+## 3*) Ask using ui of Streamlit:
+after embedding: run this command and navigating localhost:8501 for interaction:
+```bash
+./k8s/build.sh ui
+```
 
 ## 3) Ask with Groq
 

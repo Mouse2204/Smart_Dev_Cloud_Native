@@ -187,7 +187,8 @@ case "$cmd" in
 		;;
 	ui)
 		log "Starting Streamlit UI"
-		"$PYTHON_BIN" -m streamlit run src/app/streamlit.py
+		echo "Open Streamlit at: http://localhost:8501"
+		"$PYTHON_BIN" -m streamlit run src/app/streamlit.py --server.address 0.0.0.0 --server.port 8501 --server.headless true
 		;;
 	help|-h|--help)
 		print_help
