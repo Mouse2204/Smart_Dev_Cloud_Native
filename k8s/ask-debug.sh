@@ -4,6 +4,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+ENV_FILE="$ROOT_DIR/.env"
+if [[ -f "$ENV_FILE" ]]; then
+	set -a
+	# shellcheck disable=SC1090
+	source "$ENV_FILE"
+	set +a
+fi
+
 QUESTION="${1:-What is the PDF about? Cite source chunks.}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-60}"
 USE_GROQ="${USE_GROQ:-true}"
