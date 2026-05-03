@@ -131,4 +131,5 @@ minikube delete
 ```
 
 ---
+**Demo video**: https://youtu.be/ESuTjHjv7BQ
 **Tác giả:** [Lê Thanh Bình], [Phạm Hồng Minh Tú], [Trần Hải Đăng] \\ Last modify: 03/05/2026
