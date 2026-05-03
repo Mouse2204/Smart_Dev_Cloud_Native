@@ -1,0 +1,23 @@
+[
+    {
+        "source_name": "Dev.to",
+        "end_point": "https://dev.to/feed",
+        "headers": {
+            "User-Agent": "SmartDevBot/1.0"
+        }
+    },
+    {
+        "source_name": "GitHub Blog",
+        "end_point": "https://github.blog/feed/",
+        "headers": {
+            "User-Agent": "SmartDevBot/1.0"
+        }
+    },
+    {
+        "source_name": "Reddit Software Engineering",
+        "end_point": "https://www.reddit.com/r/softwareengineering/.rss",
+        "headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+    }
+]

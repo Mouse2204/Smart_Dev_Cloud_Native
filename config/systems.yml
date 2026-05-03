@@ -32,6 +32,16 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: ollama
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: qdrant
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minio
 
 ---
 # --------------------------------------------------------------------
@@ -63,6 +73,10 @@ spec:
       port: 9092
       protocol: TCP
       targetPort: 9092
+    - name: external
+      port: 9094
+      protocol: TCP
+      targetPort: 9094
   selector:
     app: kafka
 ---
@@ -97,13 +111,13 @@ spec:
             - name: KAFKA_CONTROLLER_QUORUM_VOTERS
               value: "1@localhost:9093"
             - name: KAFKA_LISTENERS
-              value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+              value: "INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093"
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: "PLAINTEXT://kafka-service.kafka-kraft:9092"
+              value: "INTERNAL://kafka-service.kafka-kraft:9092,EXTERNAL://localhost:9092"
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-              value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+              value: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
             - name: KAFKA_INTER_BROKER_LISTENER_NAME
-              value: "PLAINTEXT"
+              value: "INTERNAL"
             - name: KAFKA_CONTROLLER_LISTENER_NAMES
               value: "CONTROLLER"
             - name: KAFKA_LOG_DIRS
@@ -492,6 +506,9 @@ spec:
       containers:
       - name: puller
         image: ollama/ollama:0.1.44
+        env:
+        - name: OLLAMA_HOST
+          value: "http://ollama-service:11434"
         command:
           - /bin/sh
           - -c
@@ -523,7 +540,76 @@ spec:
 
 ---
 # ====================================================================
-# 8. SPARK STREAMING với ICEBERG (Kafka -> Iceberg)
+# 8. QDRANT (Vector DB)
+# ====================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qdrant-storage-pvc
+  namespace: qdrant
+spec:
+  storageClassName: standard
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qdrant
+  namespace: qdrant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qdrant
+  template:
+    metadata:
+      labels:
+        app: qdrant
+    spec:
+      containers:
+        - name: qdrant
+          image: qdrant/qdrant:v1.11.3
+          ports:
+            - containerPort: 6333
+            - containerPort: 6334
+          volumeMounts:
+            - name: qdrant-storage
+              mountPath: /qdrant/storage
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+      volumes:
+        - name: qdrant-storage
+          persistentVolumeClaim:
+            claimName: qdrant-storage-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant-service
+  namespace: qdrant
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 6333
+      targetPort: 6333
+    - name: grpc
+      port: 6334
+      targetPort: 6334
+  selector:
+    app: qdrant
+
+---
+# ====================================================================
+# 9. SPARK STREAMING với ICEBERG (Kafka -> Iceberg)
 # ====================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -655,6 +741,8 @@ spec:
       containers:
         - name: spark
           image: apache/spark:3.5.7-python3
+          ports:
+            - containerPort: 4040
           command:
             - /bin/bash
             - -c
@@ -670,6 +758,10 @@ spec:
               $$SPARK_HOME/bin/spark-submit \
                 --master local[1] \
                 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.5.0 \
+                --conf spark.ui.enabled=true \
+                --conf spark.ui.port=4040 \
+                --conf spark.ui.bindAddress=0.0.0.0 \
+                --conf spark.driver.bindAddress=0.0.0.0 \
                 --conf spark.sql.catalog.hive_prod=org.apache.iceberg.spark.SparkCatalog \
                 --conf spark.sql.catalog.hive_prod.type=hive \
                 --conf spark.sql.catalog.hive_prod.uri=thrift://metastore-service.hive:9083 \
@@ -697,3 +789,106 @@ spec:
         - name: warehouse
           persistentVolumeClaim:
             claimName: iceberg-warehouse-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-ui-service
+  namespace: spark
+spec:
+  type: NodePort
+  ports:
+    - name: ui
+      port: 4040
+      targetPort: 4040
+      nodePort: 30440
+  selector:
+    app: spark-streaming
+
+---
+# ====================================================================
+# 10. MINIO (S3-compatible Object Storage for Iceberg)
+# ====================================================================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-secret
+  namespace: minio
+stringData:
+  MINIO_ROOT_USER: minioadmin
+  MINIO_ROOT_PASSWORD: minioadmin123
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-data-pvc
+  namespace: minio
+spec:
+  storageClassName: standard
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio:latest
+          command:
+            - /bin/sh
+            - -c
+            - minio server /data --console-address ":9001"
+          ports:
+            - containerPort: 9000
+            - containerPort: 9001
+          envFrom:
+            - secretRef:
+                name: minio-secret
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minio-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-service
+  namespace: minio
+spec:
+  type: NodePort
+  ports:
+    - name: s3
+      port: 9000
+      targetPort: 9000
+      nodePort: 30900
+    - name: console
+      port: 9001
+      targetPort: 9001
+      nodePort: 30901
+  selector:
+    app: minio
