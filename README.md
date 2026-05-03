@@ -107,9 +107,8 @@ kubectl apply -f config/systems.yml
 ```
 
 ### Chạy các Pipeline Xử Lý
-```bash
 > Nạp dữ liệu PDF vào data/books trước khi chạy các lệnh xử lý tài liệu
-
+```bash
 # Multimodal (dành cho các tài liệu chứa hình ảnh và biểu đồ) – mặc định
 bash ./k8s/build.sh pipeline --source-dir data/books
 
