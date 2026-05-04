@@ -1,13 +1,11 @@
 # ====================================================================
 # Smart Dev-Docs Platform - Kubernetes Infrastructure Manifest
-# Phiên bản: Tối ưu cho Minikube 4GB RAM, Kafka KRaft (Bitnami),
-#            Iceberg local, Ollama CPU, Spark Streaming
 # ====================================================================
 
 ---
-# --------------------------------------------------------------------
-# 1. NAMESPACES
-# --------------------------------------------------------------------
+# ====================================================================
+# NAMESPACES
+# ====================================================================
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -44,9 +42,9 @@ metadata:
   name: minio
 
 ---
-# --------------------------------------------------------------------
-# 2. STORAGECLASS (Minikube)
-# --------------------------------------------------------------------
+# ====================================================================
+# STORAGECLASS (Minikube)
+# ====================================================================
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -57,7 +55,7 @@ volumeBindingMode: Immediate
 
 ---
 # ====================================================================
-# 3. KAFKA (KRaft mode, Bitnami image – pull ổn định)
+# KAFKA (Kraft mode)
 # ====================================================================
 apiVersion: v1
 kind: Service
@@ -156,7 +154,7 @@ spec:
 
 ---
 # ====================================================================
-# 4. POSTGRESQL – Metadata cho Hive Metastore
+# POSTGRESQL
 # ====================================================================
 apiVersion: v1
 kind: Secret
@@ -232,7 +230,7 @@ spec:
 
 ---
 # ====================================================================
-# 5. ICEBERG WAREHOUSE PVC (dùng chung cho Hive & Spark)
+# ICEBERG WAREHOUSE PVC
 # ====================================================================
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -248,7 +246,7 @@ spec:
 
 ---
 # ====================================================================
-# 6. HIVE METASTORE (Iceberg Catalog) – FIXED for alexcpn/hivemetastore
+# HIVE METASTORE (Iceberg Catalog)
 # ====================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -427,7 +425,7 @@ spec:
     app: metastore
 ---
 # ====================================================================
-# 7. OLLAMA – CPU Mode, pull models sau 30s
+# OLLAMA 
 # ====================================================================
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -540,7 +538,7 @@ spec:
 
 ---
 # ====================================================================
-# 8. QDRANT (Vector DB)
+# QDRANT (Vector DB)
 # ====================================================================
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -609,7 +607,7 @@ spec:
 
 ---
 # ====================================================================
-# 9. SPARK STREAMING với ICEBERG (Kafka -> Iceberg)
+# SPARK STREAMING với ICEBERG
 # ====================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -808,7 +806,7 @@ spec:
 
 ---
 # ====================================================================
-# 10. MINIO (S3-compatible Object Storage for Iceberg)
+# MINIO 
 # ====================================================================
 apiVersion: v1
 kind: Secret

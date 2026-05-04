@@ -1,12 +1,6 @@
-"""multimodal_extractor.py – Multimodal PDF Extractor
-
-Replaces plain pypdf text extraction with a richer pipeline that handles:
-  1. Text blocks (via pdfplumber)
-  2. Tables → converted to Markdown rows
-  3. Images / diagrams → described by LLaVa (via Ollama) if available
-
+"""
 Returns the same list[ChunkPayload] interface as the legacy extractor,
-so it is a drop-in replacement inside embedding_worker.py.
+so it is a drop-in replacement inside embedding_worker.py
 """
 from __future__ import annotations
 
@@ -27,21 +21,13 @@ logger = get_logger("multimodal_extractor")
 if TYPE_CHECKING:
     from ollama import Client as OllamaClient
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-TABLE_MIN_ROWS = 2          # ignore tables smaller than this
-IMAGE_MIN_PIXELS = 5_000    # ignore tiny images (icons, decorations)
-MAX_IMAGE_SIDE = 1024       # resize images before sending to LLaVa
-LLAVA_MODEL = "llava"       # Ollama model name
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+TABLE_MIN_ROWS = 2
+IMAGE_MIN_PIXELS = 5_000
+MAX_IMAGE_SIDE = 1024
+LLAVA_MODEL = "llava"
 
 def _table_to_markdown(table: list[list[str | None]]) -> str:
-    """Convert a pdfplumber table (list of rows) to a Markdown table string."""
+    """Convert a pdfplumber table to a Markdown table string"""
     if not table or len(table) < TABLE_MIN_ROWS:
         return ""
 
@@ -53,7 +39,7 @@ def _table_to_markdown(table: list[list[str | None]]) -> str:
 
 
 def _resize_image(img: Image.Image) -> Image.Image:
-    """Downscale image so its longest side is MAX_IMAGE_SIDE px (preserves aspect)."""
+    """Downscale image so its longest side is MAX_IMAGE_SIDE px"""
     w, h = img.size
     longest = max(w, h)
     if longest <= MAX_IMAGE_SIDE:
@@ -73,7 +59,7 @@ def _describe_image_with_llava(
     img: Image.Image,
     page_number: int,
 ) -> str:
-    """Ask LLaVa to describe an image. Returns empty string if unavailable."""
+    """Ask LLaVa to describe an image. Returns empty string if unavailable"""
     if ollama_client is None:
         return ""
     try:
@@ -97,11 +83,6 @@ def _describe_image_with_llava(
         logger.error(f"LLaVa image description failed: {exc}")
     return ""
 
-
-# ---------------------------------------------------------------------------
-# Main extraction function
-# ---------------------------------------------------------------------------
-
 def extract_chunks(
     pdf_source: Path | bytes,
     object_name: str,
@@ -109,18 +90,17 @@ def extract_chunks(
     chunk_overlap: int = 150,
     ollama_client: "OllamaClient | None" = None,
 ) -> list[ChunkPayload]:
-    """Extract rich text chunks from a PDF, handling tables and images.
-
+    """
     Args:
-        pdf_source:    Path to a local PDF file, or raw PDF bytes.
-        object_name:   Logical identifier (e.g. MinIO object key or filename).
-        chunk_size:    Character size for text splitting.
-        chunk_overlap: Overlap between consecutive chunks.
-        ollama_client: Optional Ollama client for LLaVa image descriptions.
-                       If None, images are skipped.
+        pdf_source:    Path to a local PDF file, or raw PDF bytes
+        object_name:   Logical identifier (e.g. MinIO object key or filename)
+        chunk_size:    Character size for text splitting
+        chunk_overlap: Overlap between consecutive chunks
+        ollama_client: Optional Ollama client for LLaVa image descriptions
+                       If None, images are skipped
 
     Returns:
-        list of ChunkPayload – same schema as the legacy extractor.
+        list of ChunkPayload
     """
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
@@ -142,13 +122,13 @@ def extract_chunks(
             if text:
                 page_parts.append(text)
 
-            # 2. Tables → Markdown
+            # 2. Tables -> Markdown
             for table in page.extract_tables():
                 md = _table_to_markdown(table)
                 if md:
                     page_parts.append(f"\n[Table on page {page_number}]:\n{md}")
 
-            # 3. Images → LLaVa description
+            # 3. Images -> LLaVa description
             if ollama_client is not None:
                 for img_obj in page.images:
                     try:

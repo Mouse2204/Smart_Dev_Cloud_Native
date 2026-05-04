@@ -1,16 +1,3 @@
-"""blog_crawler.py – RSS Feed Crawler + LLM Blog Summarizer
-
-Flow:
-  1. Parse RSS feeds from a curated list of tech blogs.
-  2. For each new entry (not already in Qdrant), fetch the article text.
-  3. Call Groq / Ollama to produce a 5‑6 line summary.
-  4. Upsert the summary + metadata into:
-       • Qdrant  collection: dev_docs_blogs  (for the Streamlit news feed)
-       • Kafka   topic:      blog-events     (for Spark → Iceberg long-term storage)
-
-Run:
-  python -m src.processing.blog_crawler
-"""
 from __future__ import annotations
 
 import hashlib
@@ -35,9 +22,6 @@ from src.utils.logger import get_logger
 
 logger = get_logger("blog_crawler")
 
-# ---------------------------------------------------------------------------
-# Feed configuration - loaded from data/realtime_source/source.json
-# ---------------------------------------------------------------------------
 def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
@@ -52,17 +36,12 @@ def _load_feeds(root: Path) -> list[dict[str, Any]]:
         logger.error(f"Failed to load sources: {exc}")
         return []
 
-MAX_ARTICLES_PER_FEED = 10        # latest N articles per crawl run
-REQUEST_TIMEOUT_S = 15            # HTTP request timeout
-MAX_CONTENT_CHARS = 4_000         # characters fed to LLM (keep tokens low)
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+MAX_ARTICLES_PER_FEED = 10
+REQUEST_TIMEOUT_S = 15
+MAX_CONTENT_CHARS = 4_000
 
 def _stable_id(url: str) -> str:
-    """Deterministic UUID from article URL."""
+    """Deterministic UUID from article URL"""
     return str(uuid5(NAMESPACE_URL, url))
 
 
@@ -71,7 +50,7 @@ def _sha256(text: str) -> str:
 
 
 def _parse_published(entry) -> str:
-    """Return an ISO‑8601 UTC timestamp; fall back to *now* if missing."""
+    """Return an ISO‑8601 UTC timestamp; fall back to *now* if missing"""
     for attr in ("published", "updated"):
         raw = getattr(entry, attr, None)
         if raw:
@@ -83,11 +62,10 @@ def _parse_published(entry) -> str:
 
 
 def _fetch_article_text(url: str) -> str:
-    """Fetch raw text from article URL; returns empty string on failure."""
+    """Fetch raw text from article URL; returns empty string on failure"""
     try:
         resp = requests.get(url, timeout=REQUEST_TIMEOUT_S, headers={"User-Agent": "SmartDevBot/1.0"})
         resp.raise_for_status()
-        # Very lightweight text extraction – strip HTML tags
         import re
         text = re.sub(r"<[^>]+>", " ", resp.text)
         text = re.sub(r"\s+", " ", text).strip()
@@ -98,7 +76,7 @@ def _fetch_article_text(url: str) -> str:
 
 
 def _summarize_groq(client: Groq, model: str, title: str, content: str) -> str:
-    """Summarize article using the Groq API."""
+    """Summarize article using the Groq API"""
     prompt = (
         f"Summarize the following tech article in 5-6 concise bullet points.\n"
         f"Focus on key takeaways, technologies used, and why it matters to developers.\n"
@@ -118,7 +96,7 @@ def _summarize_groq(client: Groq, model: str, title: str, content: str) -> str:
 
 
 def _summarize_ollama(client: OllamaClient, model: str, title: str, content: str) -> str:
-    """Summarize article using local Ollama."""
+    """Summarize article using local Ollama"""
     prompt = (
         f"Summarize the following tech article in 5-6 concise bullet points.\n"
         f"Focus on key takeaways, technologies used, and why it matters to developers.\n"
@@ -148,7 +126,7 @@ def _ensure_blog_collection(client: QdrantClient, collection: str, vector_size: 
 
 
 def _already_indexed(qdrant: QdrantClient, collection: str, blog_id: str) -> bool:
-    """Check whether this article URL is already stored."""
+    """Check whether this article URL is already stored"""
     if not qdrant.collection_exists(collection):
         return False
     results, _ = qdrant.scroll(
@@ -162,7 +140,7 @@ def _already_indexed(qdrant: QdrantClient, collection: str, blog_id: str) -> boo
 
 
 def _push_to_kafka(entry: BlogEntry, config: AppConfig) -> None:
-    """Push blog event to Kafka topic 'blog-events' (best‑effort; skip if unavailable)."""
+    """Push blog event to Kafka topic 'blog-events'"""
     try:
         from kafka import KafkaProducer  # type: ignore
         producer = KafkaProducer(
@@ -176,15 +154,7 @@ def _push_to_kafka(entry: BlogEntry, config: AppConfig) -> None:
     except Exception as exc:
         logger.error(f"Kafka push skipped ({exc})")
 
-
-# ---------------------------------------------------------------------------
-# Main crawl logic
-# ---------------------------------------------------------------------------
-
 def crawl(config: AppConfig) -> int:
-    """Crawl all RSS feeds, summarize new articles, upsert into Qdrant.
-    Returns the number of new articles indexed.
-    """
     qdrant = QdrantClient(url=config.qdrant_url, api_key=config.qdrant_api_key)
     ollama = OllamaClient(host=config.ollama_base_url)
     groq_client: Groq | None = None
@@ -211,7 +181,7 @@ def crawl(config: AppConfig) -> int:
 
         logger.info(f"Fetching feed: {label} ({url}) …")
         try:
-            # Using requests to handle headers (crucial for Reddit/GitHub)
+            # Using requests to handle headers
             resp = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT_S)
             resp.raise_for_status()
             parsed = feedparser.parse(resp.content)
@@ -273,7 +243,7 @@ def crawl(config: AppConfig) -> int:
             _push_to_kafka(blog_entry, config)
 
             new_articles += 1
-            time.sleep(1)  # polite delay between articles
+            time.sleep(1)
 
     logger.info(f"Done. {new_articles} new article(s) indexed.")
     return new_articles

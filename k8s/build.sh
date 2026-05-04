@@ -7,7 +7,6 @@ cd "$ROOT_DIR"
 ENV_FILE="$ROOT_DIR/.env"
 if [[ -f "$ENV_FILE" ]]; then
 	set -a
-	# shellcheck disable=SC1090
 	source "$ENV_FILE"
 	set +a
 fi
@@ -34,7 +33,6 @@ log "Using Python: $PYTHON_BIN"
 
 find_bin() {
 	local bin="$1"
-	# On Windows (check for standard env vars), prioritize .exe
 	if [[ -n "${WINDIR:-}" || -n "${COMSPEC:-}" ]]; then
 		if command -v "${bin}.exe" >/dev/null 2>&1; then
 			echo "${bin}.exe"
@@ -53,10 +51,8 @@ find_bin() {
 KUBECTL_BIN=$(find_bin kubectl || echo "kubectl.exe")
 
 run_kubectl() {
-	# Try the primary KUBECTL_BIN first
 	if "$KUBECTL_BIN" cluster-info >/dev/null 2>&1; then
 		"$KUBECTL_BIN" "$@"
-	# Fallback to powershell.exe on Windows/WSL/GitBash
 	elif command -v powershell.exe >/dev/null 2>&1; then
 		powershell.exe -NoProfile -Command "kubectl $*"
 	else
@@ -69,7 +65,6 @@ to_win_path() {
 	if command -v wslpath >/dev/null 2>&1; then
 		wslpath -w "$path"
 	else
-		# fallback for Git Bash or if wslpath is missing
 		echo "$path" | sed -e 's|^\/\([a-z]\)\/|\1:/|' -e 's|^\/mnt\/\([a-z]\)\/|\1:/|'
 	fi
 }

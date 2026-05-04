@@ -107,8 +107,9 @@ kubectl apply -f config/systems.yml
 ```
 
 ### Chạy các Pipeline Xử Lý
-> Nạp dữ liệu PDF vào data/books trước khi chạy các lệnh xử lý tài liệu
 ```bash
+> Nạp dữ liệu PDF vào data/books trước khi chạy các lệnh xử lý tài liệu
+
 # Multimodal (dành cho các tài liệu chứa hình ảnh và biểu đồ) – mặc định
 bash ./k8s/build.sh pipeline --source-dir data/books
 
@@ -122,7 +123,8 @@ bash ./k8s/build.sh crawl
 bash ./k8s/build.sh ui
 ```
 
-Mở Streamlit tại địa chỉ: **http://localhost:8501**  
+Mở Streamlit tại địa chỉ: **http://localhost:8501**
+Mở Grafana tại địa chỉ: **http://localhost:3000** (admin/admin)
 
 ### Gỡ Cài Đặt
 ```bash
@@ -130,6 +132,4 @@ minikube delete
 ```
 
 ---
-**Demo video**: https://youtu.be/ESuTjHjv7BQ  
-**Tác giả:** [Lê Thanh Bình], [Phạm Hồng Minh Tú], [Trần Hải Đăng]  
-Last modify: 03/05/2026
+**Tác giả:** [Lê Thanh Bình], [Phạm Hồng Minh Tú], [Trần Hải Đăng] \\ Last modify: 03/05/2026

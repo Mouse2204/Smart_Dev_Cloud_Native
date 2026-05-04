@@ -76,7 +76,7 @@ class AppConfig:
 			qdrant_blog_collection=os.getenv("QDRANT_BLOG_COLLECTION", "dev_docs_blogs"),
 			ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
 			embedding_model=os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"),
-		llm_model=os.getenv("LLM_MODEL", "llama-3.3-70b-versatile"),
+			llm_model=os.getenv("LLM_MODEL", "llama-3.3-70b-versatile"),
 			groq_api_key=os.getenv("GROQ_API_KEY", ""),
 			use_groq=_as_bool(os.getenv("USE_GROQ", "true")),
 			chunk_size=int(os.getenv("CHUNK_SIZE", "900")),
@@ -106,14 +106,13 @@ class ChunkPayload:
 
 @dataclass(slots=True)
 class BlogEntry:
-	"""Represents a single blog post stored in Qdrant (dev_docs_blogs collection)."""
-	blog_id: str           # sha256 of URL – used as stable Qdrant point ID seed
+	blog_id: str
 	title: str
 	url: str
 	author: str
-	summary: str           # LLM-generated 5-6 line summary
-	published_at: str      # ISO-8601 string, e.g. "2026-04-27T08:00:00Z"
-	source_feed: str       # RSS feed label, e.g. "dev.to"
+	summary: str
+	published_at: str
+	source_feed: str
 
 	def to_qdrant_payload(self) -> dict[str, Any]:
 		return {

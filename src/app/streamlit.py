@@ -7,8 +7,7 @@ from src.storage.schemas import AppConfig
 from qdrant_client import QdrantClient
 
 
-# ── Cached resources ─────────────────────────────────────────────────────────
-
+# Cache resources
 @st.cache_resource
 def get_engine() -> RagEngine:
     return RagEngine(AppConfig.from_env())
@@ -40,13 +39,13 @@ def fetch_latest_blogs(limit: int = 20) -> list[dict]:
     return entries
 
 
-# ── CSS injection ─────────────────────────────────────────────────────────────
+# CSS injection
 
 GLOBAL_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&family=Inter:wght@300;400;500&display=swap');
 
-/* ── Reset & base ── */
+/* --- Reset & base --- */
 html, body, [data-testid="stAppViewContainer"] {
     background-color: #ffffff !important;
     color: #0f0f0f !important;
@@ -57,7 +56,7 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stSidebar"] { display: none; }
 [data-testid="stToolbar"] { display: none; }
 
-/* ── Main container — add horizontal padding to prevent edge-to-edge ── */
+/* --- Main container — add horizontal padding to prevent edge-to-edge --- */
 [data-testid="stMainBlockContainer"] {
     padding: 0 !important;
     max-width: 100% !important;
@@ -68,7 +67,7 @@ html, body, [data-testid="stAppViewContainer"] {
     margin: 0 auto !important;
 }
 
-/* ── Top bar ── */
+/* --- Top bar --- */
 .topbar {
     display: flex;
     align-items: center;
@@ -119,7 +118,7 @@ html, body, [data-testid="stAppViewContainer"] {
     display: inline-block;
 }
 
-/* ── Tabs override ── */
+/* --- Tabs override --- */
 [data-testid="stTabs"] [role="tablist"] {
     background: #fafafa !important;
     border-bottom: 1px solid #e8e8ee !important;
@@ -151,7 +150,7 @@ html, body, [data-testid="stAppViewContainer"] {
     background: transparent !important;
 }
 
-/* ── RAG sidebar ── */
+/* --- RAG sidebar --- */
 .rag-sidebar {
     background: #fafafa;
     border-right: 1px solid #e8e8ee;
@@ -166,7 +165,7 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-bottom: 10px;
 }
 
-/* ── Slider override ── */
+/* --- Slider override --- */
 [data-testid="stSlider"] [data-testid="stWidgetLabel"] {
     font-family: 'IBM Plex Mono', monospace !important;
     font-size: 12px !important;
@@ -175,7 +174,7 @@ html, body, [data-testid="stAppViewContainer"] {
     letter-spacing: 1px !important;
 }
 
-/* ── Chat messages ── */
+/* --- Chat messages --- */
 [data-testid="stChatMessage"] {
     background: #f7f7fb !important;
     border: 1px solid #e8e8ee !important;
@@ -215,7 +214,7 @@ html, body, [data-testid="stAppViewContainer"] {
     color: #bbb !important;
 }
 
-/* ── Expander ── */
+/* --- Expander --- */
 [data-testid="stExpander"] {
     background: #f7f7fb !important;
     border: 1px solid #e8e8ee !important;
@@ -227,7 +226,7 @@ html, body, [data-testid="stAppViewContainer"] {
     color: #777 !important;
 }
 
-/* ── Info box ── */
+/* --- Info box --- */
 [data-testid="stInfo"] {
     background: rgba(91,107,255,0.05) !important;
     border: 1px solid rgba(91,107,255,0.2) !important;
@@ -237,7 +236,7 @@ html, body, [data-testid="stAppViewContainer"] {
     font-size: 13px !important;
 }
 
-/* ── Text input ── */
+/* --- Text input --- */
 [data-testid="stTextInput"] input {
     background: #fff !important;
     border: 1px solid #ddd !important;
@@ -260,7 +259,7 @@ html, body, [data-testid="stAppViewContainer"] {
     letter-spacing: 0.8px !important;
 }
 
-/* ── Multiselect ── */
+/* --- Multiselect --- */
 [data-testid="stMultiSelect"] [data-testid="stWidgetLabel"] {
     font-family: 'IBM Plex Mono', monospace !important;
     font-size: 12px !important;
@@ -274,7 +273,7 @@ html, body, [data-testid="stAppViewContainer"] {
     border-radius: 6px !important;
 }
 
-/* ── Buttons ── */
+/* --- Buttons --- */
 [data-testid="stButton"] button {
     background: transparent !important;
     border: 1px solid #ddd !important;
@@ -291,17 +290,17 @@ html, body, [data-testid="stAppViewContainer"] {
     background: rgba(91,107,255,0.05) !important;
 }
 
-/* ── Spinner ── */
+/* --- Spinner --- */
 [data-testid="stSpinner"] {
     font-family: 'IBM Plex Mono', monospace !important;
     font-size: 13px !important;
     color: #888 !important;
 }
 
-/* ── Divider ── */
+/* --- Divider --- */
 hr { border-color: #e8e8ee !important; }
 
-/* ── Blog cards ── */
+/* --- Blog cards --- */
 .blog-card {
     border-bottom: 1px solid #eee;
     padding: 22px 0;
@@ -391,7 +390,7 @@ hr { border-color: #e8e8ee !important; }
     background: linear-gradient(90deg, #00b89c, #5b6bff);
 }
 
-/* ── Blog section heading ── */
+/* --- Blog section heading --- */
 .blog-section-title {
 	font-family: 'Syne', sans-serif;
     font-size: 28px;
@@ -410,7 +409,7 @@ hr { border-color: #e8e8ee !important; }
     color: #aaa;
 }
 
-/* ── Context badge ── */
+/* --- Context badge --- */
 .ctx-badge {
     display: inline-block;
     margin-top: 10px;
@@ -423,7 +422,7 @@ hr { border-color: #e8e8ee !important; }
     color: #00897b;
 }
 
-/* ── Collection badge ── */
+/* --- Collection badge --- */
 .collection-badge {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
@@ -436,7 +435,7 @@ hr { border-color: #e8e8ee !important; }
     display: inline-block;
 }
 
-/* ── Article count ── */
+/* --- Article count --- */
 .article-count {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
@@ -445,7 +444,7 @@ hr { border-color: #e8e8ee !important; }
 }
 .article-count strong { color: #0f0f0f; }
 
-/* ── No articles message ── */
+/* --- No articles message --- */
 .no-articles {
     text-align: center;
     padding: 60px 0;
@@ -454,10 +453,10 @@ hr { border-color: #e8e8ee !important; }
     color: #ccc;
 }
 
-/* ── RAG main area padding ── */
+/* --- RAG main area padding --- */
 .rag-main-pad { padding: 24px 28px; }
 
-/* ── Context block inside expander ── */
+/* --- Context block inside expander --- */
 .ctx-block {
     background: #f7f7fb;
     border: 1px solid #e8e8ee;
@@ -476,7 +475,7 @@ hr { border-color: #e8e8ee !important; }
     letter-spacing: 0.3px;
 }
 
-/* ── Scrollbar ── */
+/* --- Scrollbar --- */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
@@ -485,7 +484,7 @@ hr { border-color: #e8e8ee !important; }
 """
 
 
-# ── Helper renderers ──────────────────────────────────────────────────────────
+# Helper renderers
 
 def render_topbar() -> None:
     st.markdown(
@@ -541,8 +540,7 @@ def render_blog_card(entry: dict) -> None:
     )
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
-
+# Main
 def main() -> None:
     st.set_page_config(
         page_title="Smart Dev Docs Platform",
@@ -551,16 +549,13 @@ def main() -> None:
         initial_sidebar_state="collapsed",
     )
 
-    # Inject global CSS
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
-    # Top bar
     render_topbar()
 
-    # Tabs
     tab_rag, tab_blogs = st.tabs(["◈  document rag", "◎  tech blog insights"])
 
-    # ── TAB 1: Document RAG ───────────────────────────────────────────────────
+    # TAB 1: Document RAG
     with tab_rag:
         col_sidebar, col_main = st.columns([1, 4], gap="small")
 
@@ -582,7 +577,6 @@ def main() -> None:
         with col_main:
             st.markdown('<div class="rag-main-pad">', unsafe_allow_html=True)
 
-            # Chat history
             if "messages" not in st.session_state:
                 st.session_state.messages = []
 
@@ -597,7 +591,6 @@ def main() -> None:
                             unsafe_allow_html=True,
                         )
 
-            # Chat input
             if prompt := st.chat_input("Ask a question over your documents…"):
                 st.chat_message("user").markdown(prompt)
                 st.session_state.messages.append({"role": "user", "content": prompt})
@@ -641,11 +634,10 @@ def main() -> None:
 
             st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── TAB 2: Tech Blog Insights ─────────────────────────────────────────────
+    # TAB 2: Tech Blog Insights
     with tab_blogs:
         st.markdown('<div style="padding: 30px 40px 0;">', unsafe_allow_html=True)
 
-        # Header row
         hdr_col, btn_col = st.columns([5, 1])
         with hdr_col:
             st.markdown(
@@ -663,17 +655,14 @@ def main() -> None:
 
         st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
 
-        # Controls row
         ctrl1, ctrl2, ctrl3 = st.columns([3, 3, 1])
         with ctrl1:
             search_term = st.text_input("search", placeholder="Search title or summary…", label_visibility="collapsed", key="blog_search")
         with ctrl2:
-            # Limit slider
             limit = st.slider("articles", min_value=5, max_value=50, value=20, key="blog_limit", label_visibility="collapsed")
 
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-        # Fetch entries
         entries = fetch_latest_blogs(limit=limit)
 
         if not entries:
@@ -683,7 +672,6 @@ def main() -> None:
                 unsafe_allow_html=True,
             )
         else:
-            # Source filter chips (use multiselect styled as compact)
             all_sources = sorted(set(e.get("source_feed", "Unknown") for e in entries))
             selected_sources = st.multiselect(
                 "filter by source",
@@ -694,7 +682,6 @@ def main() -> None:
                 label_visibility="collapsed",
             )
 
-            # Apply filters
             filtered = [
                 e for e in entries
                 if (not selected_sources or e.get("source_feed", "Unknown") in selected_sources)

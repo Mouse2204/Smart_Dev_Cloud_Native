@@ -1,7 +1,6 @@
-# PDF to MinIO / Qdrant RAG
 feedparser==6.0.11
 requests==2.31.0
-# Multimodal extraction (tables + diagrams)
+
 pdfplumber==0.11.0
 Pillow==10.3.0
 pytesseract==0.3.10
@@ -13,12 +12,11 @@ ollama==0.1.8
 groq==0.4.1
 streamlit==1.32.0
 
-# Realtime Reddit ingest (Kafka + Spark)
 kafka-python==2.0.2
 pyspark==3.5.1
 praw==7.8.1
-# Infrastructure
+
 prometheus-client==0.20.0
-# Testing
+
 pytest==8.1.1
 pytest-mock==3.12.0
